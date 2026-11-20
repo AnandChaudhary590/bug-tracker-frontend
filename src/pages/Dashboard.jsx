@@ -15,9 +15,11 @@ const Dashboard = () => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [projectKey, setProjectKey] = useState('');
+
     const [selectedProject, setSelectedProject] = useState(null);
-const [memberEmail, setMemberEmail] = useState('');
-const [memberMessage, setMemberMessage] = useState('');
+    const [memberEmail, setMemberEmail] = useState('');
+    const [memberRole, setMemberRole] = useState('developer');
+    const [memberMessage, setMemberMessage] = useState('');
 
     const fetchProjects = async () => {
         try {
@@ -57,29 +59,34 @@ const [memberMessage, setMemberMessage] = useState('');
         }
     };
 
-
     // ADD PROJECT MEMBER
-const handleAddMember = async (e) => {
-    e.preventDefault();
-    setMemberMessage('');
-    setError('');
+    const handleAddMember = async (e) => {
+        e.preventDefault();
+        setMemberMessage('');
+        setError('');
 
-    try {
-        const response = await API.post(
-            `/projects/${selectedProject._id}/members`,
-            { email: memberEmail }
-        );
+        try {
+            const response = await API.post(
+                `/projects/${selectedProject._id}/members`,
+                {
+                    email: memberEmail,
+                    role: memberRole
+                }
+            );
 
-        setMemberMessage(response.data.message);
-        setMemberEmail('');
-        await fetchProjects();
+            setMemberMessage(response.data.message);
+            setMemberEmail('');
+            setMemberRole('developer');
 
-    } catch (err) {
-        setMemberMessage(
-            err.response?.data?.message || 'Failed to add member.'
-        );
-    }
-};
+            await fetchProjects();
+
+        } catch (err) {
+            setMemberMessage(
+                err.response?.data?.message || 'Failed to add member.'
+            );
+        }
+    };
+
     return (
         <div className="dashboard-container">
             <header className="dashboard-header">
@@ -108,47 +115,61 @@ const handleAddMember = async (e) => {
 
                 {error && <div className="error-message">{error}</div>}
 
+                {/* MANAGE PROJECT MEMBERS */}
                 {selectedProject && (
-    <div className="project-form">
-        <h3>Manage Members: {selectedProject.name}</h3>
+                    <div className="project-form">
+                        <h3>Manage Members: {selectedProject.name}</h3>
 
-        <h4>Current Members</h4>
+                        <h4>Current Members</h4>
 
-        {selectedProject.members?.map((member) => (
-            <p key={member._id}>
-                {member.name} ({member.email})
-            </p>
-        ))}
+                        {selectedProject.members?.map((member) => (
+                            <p key={member._id}>
+                                {member.name} ({member.email})
+                            </p>
+                        ))}
 
-        <form onSubmit={handleAddMember}>
-            <label>Member Email</label>
+                        <form onSubmit={handleAddMember}>
+                            <label>Member Email</label>
 
-            <input
-                type="email"
-                placeholder="Enter registered user email"
-                value={memberEmail}
-                onChange={(e) => setMemberEmail(e.target.value)}
-                required
-            />
+                            <input
+                                type="email"
+                                placeholder="Enter registered user email"
+                                value={memberEmail}
+                                onChange={(e) => setMemberEmail(e.target.value)}
+                                required
+                            />
 
-            <button type="submit">Add Member</button>
-        </form>
+                            <label>Member Role</label>
 
-        {memberMessage && <p>{memberMessage}</p>}
+                            <select
+                                value={memberRole}
+                                onChange={(e) => setMemberRole(e.target.value)}
+                            >
+                                <option value="manager">Manager</option>
+                                <option value="developer">Developer</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
 
-        <button
-            type="button"
-            onClick={() => {
-                setSelectedProject(null);
-                setMemberEmail('');
-                setMemberMessage('');
-            }}
-        >
-            Close
-        </button>
-    </div>
-)}
+                            <button type="submit">Add Member</button>
+                        </form>
 
+                        {memberMessage && <p>{memberMessage}</p>}
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSelectedProject(null);
+                                setMemberEmail('');
+                                setMemberRole('developer');
+                                setMemberMessage('');
+                            }}
+                        >
+                            Close
+                        </button>
+                    </div>
+                )}
+
+                {/* CREATE PROJECT */}
                 {showForm && (
                     <form className="project-form" onSubmit={handleCreateProject}>
                         <h3>Create New Project</h3>
@@ -183,6 +204,7 @@ const handleAddMember = async (e) => {
                     </form>
                 )}
 
+                {/* PROJECT LIST */}
                 {loading ? (
                     <p>Loading projects...</p>
                 ) : projects.length === 0 ? (
@@ -193,30 +215,32 @@ const handleAddMember = async (e) => {
                 ) : (
                     <div className="projects-grid">
                         {projects.map((project) => (
-    <div key={project._id}>
-        <Link
-            to={`/projects/${project._id}`}
-            className="project-card"
-        >
-            <span className="project-key">{project.key}</span>
-            <h3>{project.name}</h3>
-            <p>{project.description || 'No description available.'}</p>
-            <span className="project-status">
-                {project.status}
-            </span>
-        </Link>
+                            <div key={project._id}>
+                                <Link
+                                    to={`/projects/${project._id}`}
+                                    className="project-card"
+                                >
+                                    <span className="project-key">{project.key}</span>
+                                    <h3>{project.name}</h3>
+                                    <p>
+                                        {project.description || 'No description available.'}
+                                    </p>
+                                    <span className="project-status">
+                                        {project.status}
+                                    </span>
+                                </Link>
 
-        <button
-            type="button"
-            onClick={() => {
-                setSelectedProject(project);
-                setMemberMessage('');
-            }}
-        >
-            Manage Members
-        </button>
-    </div>
-))}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedProject(project);
+                                        setMemberMessage('');
+                                    }}
+                                >
+                                    Manage Members
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 )}
             </main>
